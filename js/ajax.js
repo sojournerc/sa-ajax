@@ -32,7 +32,8 @@
       "5.7": 7,
       "5.8": 8,
       "9": 9,
-      "10": 10
+      "10": 10,
+      "11": 11
     };
     jscript = new Function("/*@cc_on return @_jscript_version; @*/")();
     if (jscript !== undefined) {
@@ -134,11 +135,13 @@
   /**
    *  Retrieve the object used to make the request.
    */
-  var xhr = function() {
-    if(!cors) {
-      return new XDomainRequest();
-    }else if(window.XMLHttpRequest) {
+  var xhr = function(isCrossOrigin) {
+    // unless we have to for IE9 (cross-origin), we'd prefer to use the 
+    // available XMLHttpRequest as it supports sending cookies with the request
+    if (cors || (!isCrossOrigin && ie.browser && ie.version >= 9)) {
       return new XMLHttpRequest();
+    } else {
+      return new XDomainRequest();
     }
     return null;
   }
@@ -331,7 +334,12 @@
       url = req.url;
     // execute as ajax
     }else{
-      req = xhr();
+
+      // determine if this is a cross origin request
+      var host = url.replace(/^(?:(ht|f)tp(s?)\:\/\/)/,'').split(/[/?#]/)[0];
+      var isCrossOrigin = host !== window.location.host;
+      req = xhr(isCrossOrigin);
+
       if(!cors) {
         req.open(method, url);
         req.onload = function() {
